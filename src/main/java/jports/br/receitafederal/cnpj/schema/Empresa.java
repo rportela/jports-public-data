@@ -1,4 +1,4 @@
-package jports.br.receitafederal.cnpj;
+package jports.br.receitafederal.cnpj.schema;
 
 import java.util.Date;
 
@@ -7,7 +7,7 @@ import jports.text.FixedLengthColumn;
 import jports.text.FixedLengthTable;
 
 @FixedLengthTable
-public class CadastroCnpjEmpresa {
+public class Empresa {
 
 	/**
 	 * CONTEM O NÚMERO DE INSCRIÇÃO NO CNPJ (CADASTRO NACIONAL DA PESSOA JURÍDICA).

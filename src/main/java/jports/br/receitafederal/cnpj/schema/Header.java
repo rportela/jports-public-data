@@ -1,4 +1,4 @@
-package jports.br.receitafederal.cnpj;
+package jports.br.receitafederal.cnpj.schema;
 
 import java.util.Date;
 
@@ -12,7 +12,7 @@ import jports.text.FixedLengthTable;
  *
  */
 @FixedLengthTable
-public class CadastroCnpjHeader {
+public class Header {
 
 	@FixedLengthColumn(start = 17, end = 28)
 	public String nome_arquivo;

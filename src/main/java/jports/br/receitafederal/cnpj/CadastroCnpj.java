@@ -11,23 +11,33 @@ import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 import java.util.zip.ZipInputStream;
 
+import jports.br.receitafederal.cnpj.schema.CnaeSecundaria;
+import jports.br.receitafederal.cnpj.schema.Empresa;
+import jports.br.receitafederal.cnpj.schema.Header;
+import jports.br.receitafederal.cnpj.schema.Socio;
+import jports.br.receitafederal.cnpj.schema.Trailer;
 import jports.text.FixedLengthAspect;
 
 public class CadastroCnpj {
 
-	public final int parse(
-			ZipInputStream input,
-			Charset charset,
-			Consumer<CadastroCnpjHeader> headerConsumer,
-			Consumer<CadastroCnpjEmpresa> empresaConsumer,
-			Consumer<CadastroCnpjSocio> socioConsumer) throws IOException {
+	public Charset charset = StandardCharsets.ISO_8859_1;
+	public Consumer<Header> onHeader;
+	public Consumer<Empresa> onEmpresa;
+	public Consumer<Socio> onSocio;
+	public Consumer<CnaeSecundaria> onCnaeSecundaria;
+	public Consumer<Trailer> onTrailer;
+
+	public final int parse(ZipInputStream input) throws IOException {
 
 		if (input == null)
 			return -1;
 
-		FixedLengthAspect<CadastroCnpjHeader> headerSchema = new FixedLengthAspect<>(CadastroCnpjHeader.class);
-		FixedLengthAspect<CadastroCnpjEmpresa> empresaSchema = new FixedLengthAspect<>(CadastroCnpjEmpresa.class);
-		FixedLengthAspect<CadastroCnpjSocio> socioSchema = new FixedLengthAspect<>(CadastroCnpjSocio.class);
+		FixedLengthAspect<Header> headerSchema = new FixedLengthAspect<>(Header.class);
+		FixedLengthAspect<Empresa> empresaSchema = new FixedLengthAspect<>(Empresa.class);
+		FixedLengthAspect<Socio> socioSchema = new FixedLengthAspect<>(Socio.class);
+		FixedLengthAspect<CnaeSecundaria> cnaeSecundariaSchema = new FixedLengthAspect<>(CnaeSecundaria.class);
+		FixedLengthAspect<Trailer> trailerSchema = new FixedLengthAspect<>(Trailer.class);
+
 		int lineCounter = 0;
 		while ((input.getNextEntry()) != null) {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(input, charset));
@@ -37,16 +47,34 @@ public class CadastroCnpj {
 				char tipo_registro = line.charAt(0);
 				switch (tipo_registro) {
 				case '0':
-					CadastroCnpjHeader header = headerSchema.parseLine(line);
-					headerConsumer.accept(header);
+					if (this.onHeader != null) {
+						Header header = headerSchema.parseLine(line);
+						this.onHeader.accept(header);
+					}
 					break;
 				case '1':
-					CadastroCnpjEmpresa empresa = empresaSchema.parseLine(line);
-					empresaConsumer.accept(empresa);
+					if (this.onEmpresa != null) {
+						Empresa empresa = empresaSchema.parseLine(line);
+						this.onEmpresa.accept(empresa);
+					}
 					break;
 				case '2':
-					CadastroCnpjSocio socio = socioSchema.parseLine(line);
-					socioConsumer.accept(socio);
+					if (this.onSocio != null) {
+						Socio socio = socioSchema.parseLine(line);
+						this.onSocio.accept(socio);
+					}
+					break;
+				case '6':
+					if (this.onCnaeSecundaria != null) {
+						CnaeSecundaria cs = cnaeSecundariaSchema.parseLine(line);
+						this.onCnaeSecundaria.accept(cs);
+					}
+					break;
+				case '9':
+					if (this.onTrailer != null) {
+						Trailer trailer = trailerSchema.parseLine(line);
+						this.onTrailer.accept(trailer);
+					}
 					break;
 
 				}
@@ -59,45 +87,15 @@ public class CadastroCnpj {
 		return lineCounter;
 	}
 
-	public final void parse(
-			File file,
-			Charset charset,
-			Consumer<CadastroCnpjHeader> headerConsumer,
-			Consumer<CadastroCnpjEmpresa> empresaConsumer,
-			Consumer<CadastroCnpjSocio> socioConsumer) throws FileNotFoundException, IOException {
+	public final int parse(File file) throws FileNotFoundException, IOException {
 		try (ZipInputStream zis = new ZipInputStream(new FileInputStream(file))) {
-			parse(zis, charset, headerConsumer, empresaConsumer, socioConsumer);
+			return parse(zis);
 		}
 	}
 
-	public final void parse(
-			File file,
-			Consumer<CadastroCnpjHeader> headerConsumer,
-			Consumer<CadastroCnpjEmpresa> empresaConsumer,
-			Consumer<CadastroCnpjSocio> socioConsumer) throws FileNotFoundException, IOException {
-		parse(file, StandardCharsets.ISO_8859_1, headerConsumer, empresaConsumer, socioConsumer);
+	public final int parse(
+			String name) throws FileNotFoundException, IOException {
+		return parse(new File(name));
 	}
 
-	public final void parse(
-			String name,
-			Consumer<CadastroCnpjHeader> headerConsumer,
-			Consumer<CadastroCnpjEmpresa> empresaConsumer,
-			Consumer<CadastroCnpjSocio> socioConsumer) throws FileNotFoundException, IOException {
-		parse(new File(name), StandardCharsets.ISO_8859_1, headerConsumer, empresaConsumer, socioConsumer);
-	}
-
-	public static final void main(String... args) {
-		String file = "/home/rportela/Downloads/DADOS_ABERTOS_CNPJ_01.zip";
-		try {
-			new CadastroCnpj().parse(file, h -> {
-			}, e -> {
-			}, s -> {
-			});
-
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
 }
